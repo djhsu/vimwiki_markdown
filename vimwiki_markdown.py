@@ -8,6 +8,7 @@ import subprocess
 import sys
 
 import markdown
+import frontmatter
 
 default_template = """<!DOCTYPE html>
 <html>
@@ -119,23 +120,22 @@ def main():
         LinkInlineProcessor(markdown.inlinepatterns.LINK_RE, md), "link", 160
     )
 
-    with open(INPUT_FILE, "rb") as f:
+    with open(INPUT_FILE, "r") as f:
         content = ""
         placeholders = {}
 
-        # Retrieve vimwiki placeholders
-        for line in f:
-            line = line.decode()[:-1]
-            if line.startswith("%nohtml"):
+        ## Retrieve vimwiki placeholders
+        post = frontmatter.load(f)
+        if 'nohtml' in post:
+            if post['nohtml'] == 'true':
                 sys.exit(0)
-            elif line.startswith("%title"):
-                placeholders["%title%"] = line[7:]
-            elif line.startswith("%date"):
-                placeholders["%date%"] = line[6:]
-            elif line.startswith("%template"):
-                placeholders["template"] = line[10:]
-            else:
-                content += line + "\n"
+        if 'title' in post:
+            placeholders["%title%"] = post['title']
+        if 'date' in post:
+            placeholders["%date%"] = post['date']
+        if 'template' in post:
+            placeholders["template"] = post['template']
+        content = post.content + "\n"
 
         # Set default values
         if "%title%" not in placeholders:
